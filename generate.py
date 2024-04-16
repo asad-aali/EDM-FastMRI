@@ -18,6 +18,7 @@ import torch
 import PIL.Image
 import dnnlib
 from torch_utils import distributed as dist
+import matplotlib.pyplot as plt
 
 #----------------------------------------------------------------------------
 # Proposed EDM sampler (Algorithm 2).
@@ -220,6 +221,7 @@ def parse_int_list(s):
 @click.option('--subdirs',                 help='Create subdirectory for every 1000 seeds',                         is_flag=True)
 @click.option('--class', 'class_idx',      help='Class label  [default: random]', metavar='INT',                    type=click.IntRange(min=0), default=None)
 @click.option('--batch', 'max_batch_size', help='Maximum batch size', metavar='INT',                                type=click.IntRange(min=1), default=64, show_default=True)
+@click.option('--gpu',                     help='GPU node for training', metavar='STR',                                                         default="0", show_default=True)
 
 @click.option('--steps', 'num_steps',      help='Number of sampling steps', metavar='INT',                          type=click.IntRange(min=1), default=18, show_default=True)
 @click.option('--sigma_min',               help='Lowest noise level  [default: varies]', metavar='FLOAT',           type=click.FloatRange(min=0, min_open=True))
@@ -235,7 +237,7 @@ def parse_int_list(s):
 @click.option('--schedule',                help='Ablate noise schedule sigma(t)', metavar='vp|ve|linear',           type=click.Choice(['vp', 've', 'linear']))
 @click.option('--scaling',                 help='Ablate signal scaling s(t)', metavar='vp|none',                    type=click.Choice(['vp', 'none']))
 
-def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=torch.device('cuda'), **sampler_kwargs):
+def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, gpu, device=torch.device('cuda'), **sampler_kwargs):
     """Generate random images using the techniques described in the paper
     "Elucidating the Design Space of Diffusion-Based Generative Models".
 
@@ -251,6 +253,10 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
     torchrun --standalone --nproc_per_node=2 generate.py --outdir=out --seeds=0-999 --batch=64 \\
         --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-vp.pkl
     """
+    if gpu != "0":
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu)
+        
     dist.init()
     num_batches = ((len(seeds) - 1) // (max_batch_size * dist.get_world_size()) + 1) * dist.get_world_size()
     all_batches = torch.as_tensor(seeds).tensor_split(num_batches)
@@ -294,15 +300,27 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
         images = sampler_fn(net, latents, class_labels, randn_like=rnd.randn_like, **sampler_kwargs)
 
         # Save images.
-        images_np = (images * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(0, 2, 3, 1).cpu().numpy()
-        for seed, image_np in zip(batch_seeds, images_np):
-            image_dir = os.path.join(outdir, f'{seed-seed%1000:06d}') if subdirs else outdir
-            os.makedirs(image_dir, exist_ok=True)
-            image_path = os.path.join(image_dir, f'{seed:06d}.png')
-            if image_np.shape[2] == 1:
-                PIL.Image.fromarray(image_np[:, :, 0], 'L').save(image_path)
-            else:
-                PIL.Image.fromarray(image_np, 'RGB').save(image_path)
+        if images.shape[1] == 2:
+            images_np = images[:,0,...].cpu().detach() + 1j*images[:,1,...].cpu().detach()
+            for seed, image_np in zip(batch_seeds, images_np):
+                image_dir = os.path.join(outdir, f'{seed-seed%1000:06d}') if subdirs else outdir
+                os.makedirs(image_dir, exist_ok=True)
+                image_path = os.path.join(image_dir, f'{seed:06d}.png')
+                plt.figure(frameon=False)
+                plt.imshow(torch.flipud(torch.abs(image_np)), cmap='gray')
+                plt.axis('off')
+                plt.savefig(image_path, transparent=True, bbox_inches='tight', pad_inches=0)
+                plt.close()
+        else:
+            images_np = (images * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(0, 2, 3, 1).cpu().numpy()
+            for seed, image_np in zip(batch_seeds, images_np):
+                image_dir = os.path.join(outdir, f'{seed-seed%1000:06d}') if subdirs else outdir
+                os.makedirs(image_dir, exist_ok=True)
+                image_path = os.path.join(image_dir, f'{seed:06d}.png')
+                if image_np.shape[2] == 1:
+                    PIL.Image.fromarray(image_np[:, :, 0], 'L').save(image_path)
+                else:
+                    PIL.Image.fromarray(image_np, 'RGB').save(image_path)
 
     # Done.
     torch.distributed.barrier()
