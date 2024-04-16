@@ -149,7 +149,7 @@ def main(**kwargs):
         c.augment_kwargs = dnnlib.EasyDict(class_name='training.augment.AugmentPipe', p=opts.augment)
         c.augment_kwargs.update(xflip=1e8, yflip=1, scale=1, rotate_frac=1, translate_frac=1)
         c.network_kwargs.augment_dim = 7
-    c.network_kwargs.update(dropout=opts.dropout, use_fp16=opts.fp16)
+    c.network_kwargs.update(dropout=opts.dropout, use_fp16=opts.fp16, label_dropout=0.1)
 
     # Training options.
     c.total_kimg = max(int(opts.duration * 1000), 1)

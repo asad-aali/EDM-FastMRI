@@ -1,8 +1,11 @@
 CUDA_VISIBLE_DEVICES=2,3
-ROOT=/csiNAS2/slow/brett/edm_outputs
-MODEL_PATH=00037-fastmri_brain_preprocessed_9_25_23-uncond-ddpmpp-edm-gpus4-batch40-fp32-aspect
-MODEL_NAME=network-snapshot-004800.pkl
+ANATOMY=brain
+DATA=original
+ROOT=/csiNAS/asad/EDM-FastMRI
+MODEL_PATH=00000-original-uncond-ddpmpp-edm-gpus2-batch30-fp32-container_test/network-snapshot-001000.pkl
+BATCH_SIZE=8
 
 torchrun --standalone --nproc_per_node=2 generate.py \
-        --outdir=results/priors/$MODEL_PATH --seeds=0-15 --batch=8 \
-        --network=$ROOT/$MODEL_PATH/$MODEL_NAME --gpu=$CUDA_VISIBLE_DEVICES
+        --outdir=$ROOT/results/priors/$ANATOMY/$DATA --seeds=0-15 \
+        --batch=$BATCH_SIZE --network=$ROOT/models/$ANATOMY/$DATA/$MODEL_PATH \
+        --gpu=$CUDA_VISIBLE_DEVICES
