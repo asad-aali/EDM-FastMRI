@@ -45,6 +45,7 @@ def training_loop(
     resume_state_dump   = None,     # Start from the given training state, None = reset training state.
     resume_kimg         = 0,        # Start from the given training progress.
     cudnn_benchmark     = True,     # Enable torch.backends.cudnn.benchmark?
+    normalize           = 1,        # Normalize the input images
     device              = torch.device('cuda'),
 ):
     # Initialize.
@@ -125,7 +126,10 @@ def training_loop(
         for round_idx in range(num_accumulation_rounds):
             with misc.ddp_sync(ddp, (round_idx == num_accumulation_rounds - 1)):
                 images, labels = next(dataset_iterator)
-                images = images.to(device).to(torch.float32) / 127.5 - 1
+                if normalize == 1:
+                    images = images.to(device).to(torch.float32) / 127.5 - 1
+                else:
+                    images = images.to(device).to(torch.float32)
                 labels = labels.to(device)
                 loss = loss_fn(net=ddp, images=images, labels=labels, augment_pipe=augment_pipe)
                 training_stats.report('Loss/loss', loss)

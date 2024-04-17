@@ -53,6 +53,7 @@ def parse_int_list(s):
 @click.option('--batch',         help='Total batch size', metavar='INT',                            type=click.IntRange(min=1), default=512, show_default=True)
 @click.option('--gpu',           help='GPU node for training', metavar='STR',                       default="0", show_default=True)
 @click.option('--batch-gpu',     help='Limit batch size per GPU', metavar='INT',                    type=click.IntRange(min=1))
+@click.option('--normalize',     help='Normalization of input images', metavar='INT',               type=click.IntRange(min=0, max=1), default=1, show_default=True)
 @click.option('--cbase',         help='Channel multiplier  [default: varies]', metavar='INT',       type=int)
 @click.option('--cres',          help='Channels per resolution  [default: varies]', metavar='LIST', type=parse_int_list)
 @click.option('--lr',            help='Learning rate', metavar='FLOAT',                             type=click.FloatRange(min=0, min_open=True), default=10e-4, show_default=True)
@@ -155,7 +156,7 @@ def main(**kwargs):
     c.total_kimg = max(int(opts.duration * 1000), 1)
     c.ema_halflife_kimg = int(opts.ema * 1000)
     c.update(batch_size=opts.batch, batch_gpu=opts.batch_gpu)
-    c.update(loss_scaling=opts.ls, cudnn_benchmark=opts.bench)
+    c.update(loss_scaling=opts.ls, cudnn_benchmark=opts.bench, normalize=opts.normalize)
     c.update(kimg_per_tick=opts.tick, snapshot_ticks=opts.snap, state_dump_ticks=opts.dump)
 
     # Random seed.
