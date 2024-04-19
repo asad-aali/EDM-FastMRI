@@ -1,4 +1,5 @@
 CUDA_VISIBLE_DEVICES=2,3
+NPROC=2
 LOADER=Numpy
 ANATOMY=brain
 DATA=original
@@ -6,7 +7,7 @@ ROOT=/csiNAS/asad/EDM-FastMRI
 BATCH_SIZE=30
 NORMALIZE=0
 
-torchrun --standalone --nproc_per_node=2 train.py \
+torchrun --standalone --nproc_per_node=$NPROC train.py \
  --outdir=$ROOT/models/$ANATOMY/$DATA \
  --data=$ROOT/data/$ANATOMY/$DATA \
  --cond=0 --arch=ddpmpp --duration=10 \
