@@ -264,3 +264,38 @@ def print_module_summary(module, inputs, max_nesting=3, skip_redundant=True):
     return outputs
 
 #----------------------------------------------------------------------------
+class StackedRandomGenerator:
+    def __init__(self, device, seeds):
+        super().__init__()
+        self.generators = [torch.Generator(device).manual_seed(int(seed) % (1 << 32)) for seed in seeds]
+
+    def randn(self, size, **kwargs):
+        assert size[0] == len(self.generators)
+        return torch.stack([torch.randn(size[1:], generator=gen, **kwargs) for gen in self.generators])
+
+    def randn_like(self, input):
+        return self.randn(input.shape, dtype=input.dtype, layout=input.layout, device=input.device)
+
+    def randint(self, *args, size, **kwargs):
+        assert size[0] == len(self.generators)
+        return torch.stack([torch.randint(*args, size=size[1:], generator=gen, **kwargs) for gen in self.generators])
+
+#----------------------------------------------------------------------------
+# MRI Utils for computing metrics
+def psnr(gt, est, max_pixel): 
+    mse = np.mean((gt - est) ** 2) 
+    max_pixel = max_pixel
+    psnr = 20 * np.log10(max_pixel / np.sqrt(mse)) 
+    return psnr
+
+def nrmse_np(x,y):
+    num = np.linalg.norm(x-y)
+    denom = np.linalg.norm(x)
+    return num/denom
+
+def nrmse(x, y):
+    num = torch.norm(x-y, p=2)
+    denom = torch.norm(x,p=2)
+    return num/denom
+
+#----------------------------------------------------------------------------
