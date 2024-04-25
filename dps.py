@@ -195,6 +195,7 @@ parser.add_argument('--outdir', type=str, default='none')
 parser.add_argument('--network', type=str, default='none')
 parser.add_argument('--img_channels', type=int, default=2)
 parser.add_argument('--method', type=str, default='edm')
+parser.add_argument('--noise_sigma', type=float, default=0)
 
 args = parser.parse_args()
 
@@ -227,7 +228,8 @@ for args.sample in range(0, args.samples):
 
     gt_img = cont['gt'][None,None,...].cuda() #shape [1,1,384,320]
     s_maps = fftmod(cont['s_map'])[None,...].cuda() # shape [1,16,384,320]
-    fs_ksp = fftmod(cont['ksp'])[None,...].cuda() #shape [1,16,384,320]
+    fs_ksp = cont['ksp'] + torch.rand_like(cont['ksp'])*args.noise_sigma
+    fs_ksp = fftmod(fs_ksp)[None,...].cuda() #shape [1,16,384,320]
     mask = cont[mask_str][None, ...].cuda() # shape [1,1,384,320]
     ksp = mask * fs_ksp
 
@@ -270,7 +272,7 @@ for args.sample in range(0, args.samples):
     }
 
     # designate + create save directory
-    results_dir = args.outdir + "/R=%d"%(args.inference_R)
+    results_dir = args.outdir + "/R=%d/sigma%d"%(args.inference_R, args.noise_sigma)
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
