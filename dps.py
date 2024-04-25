@@ -177,7 +177,8 @@ def mri_transform(x):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu', type=str, default="0")
-parser.add_argument('--samples', type=int, default=100)
+parser.add_argument('--sample_start', type=int, default=0)
+parser.add_argument('--sample_end', type=int, default=100)
 parser.add_argument('--l_ss', type=float, default=1)
 parser.add_argument('--sigma_max', type=float, default=10)
 parser.add_argument('--num_steps', type=int, default=300)
@@ -219,8 +220,8 @@ with dnnlib.util.open_url(net_save, verbose=(dist.get_rank() == 0)) as f:
 total_params = sum(p.numel() for p in net.parameters())
 print(f"\nModel parameters: {total_params}" + "\n")
 
-for args.sample in range(0, args.samples):
-    #load data and preprocess
+for args.sample in range(args.sample_start, args.sample_end):
+    # load data and preprocess
     print("\nValidation Sample " + str(args.sample+1) + ":\n")
     data_file = args.measurements_path + "/sample_%d.pt"%args.sample
     cont = torch.load(data_file)
@@ -259,8 +260,7 @@ for args.sample in range(0, args.samples):
     img_SSIM = ssim(abs(gt_img[0,0]), abs(mean_recon[0,0]), data_range=abs(gt_img[0,0]).max() - abs(gt_img[0,0]).min())
     img_PSNR = psnr(gt=abs(gt_img[0,0]), est=abs(mean_recon[0]),max_pixel=np.amax(abs(gt_img)))
 
-    # print('cplx net out shape: ',cplx_recon.shape)
-    print('Sample %d, seed %d, R: %d, NRMSE: %.3f, SSIM: %.3f, PSNR: %.3f'%(args.sample, args.seed, args.inference_R, img_nrmse, img_SSIM, img_PSNR))
+    print('Sample %d, seed %d, R: %d, NRMSE: %.3f, SSIM: %.3f, PSNR: %.3f'%(args.sample+1, args.seed, args.inference_R, img_nrmse, img_SSIM, img_PSNR))
 
     dict = { 
             'gt_img': gt_img,
