@@ -272,7 +272,7 @@ for args.sample in range(args.sample_start, args.sample_end):
     }
 
     # designate + create save directory
-    results_dir = args.outdir + "/R=%d/sigma%d"%(args.inference_R, args.noise_sigma)
+    results_dir = args.outdir + "/R=%d/sigma%.3f"%(args.inference_R, args.noise_sigma)
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
