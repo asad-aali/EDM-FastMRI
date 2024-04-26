@@ -10,7 +10,7 @@ STEPS=500
 SEED=15
 SAMPLE_START=0
 SAMPLE_END=100
-NOISE_SIGMA=0 # [0, 0.078, 0.25]
+NOISE_SIGMA=0 # brain: [0, 0.078, 0.25], knee: [0 0.18 0.61]
 
 torchrun --standalone --nproc_per_node=$NPROC dps.py \
     --seed $SEED --latent_seeds $SEED --gpu=$CUDA_VISIBLE_DEVICES \
