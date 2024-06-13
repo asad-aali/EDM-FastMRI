@@ -188,6 +188,7 @@ parser.add_argument('--latent_seeds', type=int, nargs='+' ,default= [10])
 parser.add_argument('--S_churn', type=float, default=40)
 parser.add_argument('--net_arch', type=str, default='ddpmpp') 
 parser.add_argument('--measurements_path', type=str, default='') 
+parser.add_argument('--ksp_path', type=str, default='')
 parser.add_argument('--discretization', type=str, default='edm') # ['vp', 've', 'iddpm', 'edm']
 parser.add_argument('--solver', type=str, default='euler') # ['euler', 'heun']
 parser.add_argument('--schedule', type=str, default='linear') # ['vp', 've', 'linear']
@@ -196,7 +197,6 @@ parser.add_argument('--outdir', type=str, default='none')
 parser.add_argument('--network', type=str, default='none')
 parser.add_argument('--img_channels', type=int, default=2)
 parser.add_argument('--method', type=str, default='edm')
-parser.add_argument('--noise_sigma', type=float, default=0)
 
 args = parser.parse_args()
 
@@ -224,13 +224,14 @@ for args.sample in range(args.sample_start, args.sample_end):
     # load data and preprocess
     print("\nValidation Sample " + str(args.sample+1) + ":\n")
     data_file = args.measurements_path + "/sample_%d.pt"%args.sample
+    ksp_file = args.ksp_path + "/sample_%d.pt"%args.sample
     cont = torch.load(data_file)
+    cont_ksp = torch.load(ksp_file)
     mask_str = 'mask_%d'%args.inference_R
 
     gt_img = cont['gt'][None,None,...].cuda() #shape [1,1,384,320]
-    s_maps = fftmod(cont['s_map'])[None,...].cuda() # shape [1,16,384,320]
-    fs_ksp = cont['ksp'] + torch.rand_like(cont['ksp'])*args.noise_sigma
-    fs_ksp = fftmod(fs_ksp)[None,...].cuda() #shape [1,16,384,320]
+    s_maps = fftmod(cont_ksp['s_map'])[None,...].cuda() # shape [1,16,384,320]
+    fs_ksp = fftmod(cont_ksp['ksp'])[None,...].cuda() #shape [1,16,384,320]
     mask = cont[mask_str][None, ...].cuda() # shape [1,1,384,320]
     ksp = mask * fs_ksp
 
