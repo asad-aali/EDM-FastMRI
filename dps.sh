@@ -18,7 +18,7 @@ do
         do
             KSP_PATH=/csiNAS/asad/data/brain_fastMRI/val_samples_noisy/$INFERENCE_SNR
             
-            python -m torch.distributed.run --standalone --nproc_per_node=$NPROC dps.py \
+            torchrun --standalone --nproc_per_node=$NPROC dps.py \
             --seed $SEED --latent_seeds $SEED --gpu=$CUDA_VISIBLE_DEVICES \
             --sample_start $SAMPLE_START --sample_end $SAMPLE_END \
             --inference_R $R --inference_snr $INFERENCE_SNR \
