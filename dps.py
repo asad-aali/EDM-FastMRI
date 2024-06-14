@@ -189,6 +189,7 @@ parser.add_argument('--S_churn', type=float, default=40)
 parser.add_argument('--net_arch', type=str, default='ddpmpp') 
 parser.add_argument('--measurements_path', type=str, default='') 
 parser.add_argument('--ksp_path', type=str, default='')
+parser.add_argument('--inference_snr', type=str, default='')
 parser.add_argument('--discretization', type=str, default='edm') # ['vp', 've', 'iddpm', 'edm']
 parser.add_argument('--solver', type=str, default='euler') # ['euler', 'heun']
 parser.add_argument('--schedule', type=str, default='linear') # ['vp', 've', 'linear']
@@ -273,7 +274,7 @@ for args.sample in range(args.sample_start, args.sample_end):
     }
 
     # designate + create save directory
-    results_dir = args.outdir + "/R=%d/sigma%.3f"%(args.inference_R, args.noise_sigma)
+    results_dir = args.outdir + "/R=%d/snr%.3f"%(args.inference_R, args.inference_snr)
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
