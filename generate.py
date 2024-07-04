@@ -314,10 +314,11 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, gpu, sa
                 os.makedirs(image_dir, exist_ok=True)
                 image_path = os.path.join(image_dir, f'{seed:06d}.png')
                 plt.figure(frameon=False)
-                plt.imshow(torch.flipud(torch.abs(image_np)), cmap='gray')
+                plt.imshow(torch.flipud(torch.abs(image_np)), cmap='gray', vmax=1)
                 plt.axis('off')
                 plt.savefig(image_path, transparent=True, bbox_inches='tight', pad_inches=0)
                 plt.close()
+                np.save(image_path[0:-4], image_np)
         else:
             images_np = (images * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(0, 2, 3, 1).cpu().numpy()
             for seed, image_np in zip(batch_seeds, images_np):

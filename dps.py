@@ -274,7 +274,7 @@ for args.sample in range(args.sample_start, args.sample_end):
     }
 
     # designate + create save directory
-    results_dir = args.outdir + "/R=%d/snr%s"%(args.inference_R, args.inference_snr)
+    results_dir = args.outdir + "/R=%d/snr%s/seed_%d"%(args.inference_R, args.inference_snr, args.seed)
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
