@@ -80,3 +80,32 @@ class EDMLoss:
         return loss
 
 #----------------------------------------------------------------------------
+# Loss function proposed in the paper "Generalized SURE for Exponential 
+# Families: Applications to Regularization" (GSURE).
+
+@persistence.persistent_class
+class GSURELoss:
+    def __init__(self, sigma=1):
+        self.sigma = sigma
+
+    def __call__(self, net, images, labels=None, augment_pipe=None):
+        h_est = images[:, 2:4].clone()
+        u = images[:, 0:2]
+        u.requires_grad_(True)
+
+        sigma = self.sigma * torch.ones([images.shape[0], 1, 1, 1], device=images.device)
+        out = net(u, sigma, class_labels=None, augment_labels=None)
+        h_u = torch.square(torch.abs(out))
+        
+        random_dir = torch.sign(torch.randn_like(u))
+        with torch.enable_grad():
+            fn_eps = torch.sum(out * random_dir)
+            grad_fn_eps = torch.autograd.grad(fn_eps, u, create_graph=True)[0]
+        u.requires_grad_(False)
+        div_loss = grad_fn_eps * random_dir
+        
+        naive_mult = out * h_est
+        loss = h_u + 2 * (div_loss - naive_mult)
+        return loss
+    
+#----------------------------------------------------------------------------

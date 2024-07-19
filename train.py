@@ -43,10 +43,10 @@ def parse_int_list(s):
 # Main options.
 @click.option('--outdir',        help='Where to save the results', metavar='DIR',                   type=str, required=True)
 @click.option('--data',          help='Path to the dataset', metavar='ZIP|DIR',                     type=str, required=True)
-@click.option('--loader',        help='Dataloader type', metavar='Image|Numpy',                     type=click.Choice(['Image', 'Numpy']), default='Image', show_default=True)
+@click.option('--loader',        help='Dataloader type', metavar='Image|Numpy|Noisy',               type=click.Choice(['Image', 'Numpy', 'Noisy']), default='Image', show_default=True)
 @click.option('--cond',          help='Train class-conditional model', metavar='BOOL',              type=bool, default=False, show_default=True)
 @click.option('--arch',          help='Network architecture', metavar='ddpmpp|ncsnpp|adm',          type=click.Choice(['ddpmpp', 'ncsnpp', 'adm']), default='ddpmpp', show_default=True)
-@click.option('--precond',       help='Preconditioning & loss function', metavar='vp|ve|edm',       type=click.Choice(['vp', 've', 'edm']), default='edm', show_default=True)
+@click.option('--precond',       help='Preconditioning & loss function', metavar='vp|ve|edm|gsure', type=click.Choice(['vp', 've', 'edm', 'gsure']), default='edm', show_default=True)
 
 # Hyperparameters.
 @click.option('--duration',      help='Training duration', metavar='MIMG',                          type=click.FloatRange(min=0, min_open=True), default=200, show_default=True)
@@ -136,6 +136,9 @@ def main(**kwargs):
     elif opts.precond == 've':
         c.network_kwargs.class_name = 'training.networks.VEPrecond'
         c.loss_kwargs.class_name = 'training.loss.VELoss'
+    elif opts.precond == 'gsure':
+        c.network_kwargs.class_name = 'training.networks.GSUREPrecond'
+        c.loss_kwargs.class_name = 'training.loss.GSURELoss'
     else:
         assert opts.precond == 'edm'
         c.network_kwargs.class_name = 'training.networks.EDMPrecond'
@@ -146,7 +149,7 @@ def main(**kwargs):
         c.network_kwargs.model_channels = opts.cbase
     if opts.cres is not None:
         c.network_kwargs.channel_mult = opts.cres
-    if opts.augment:
+    if opts.augment > 0:
         c.augment_kwargs = dnnlib.EasyDict(class_name='training.augment.AugmentPipe', p=opts.augment)
         c.augment_kwargs.update(xflip=1e8, yflip=1, scale=1, rotate_frac=1, translate_frac=1)
         c.network_kwargs.augment_dim = 7
