@@ -14,6 +14,7 @@ import PIL.Image
 import json
 import torch
 import dnnlib
+import nibabel as nib
 
 try:
     import pyspng
@@ -419,3 +420,38 @@ class NoisyFolderDataset(Dataset):
         labels = np.array(labels)
         labels = labels.astype({1: np.int64, 2: np.float32}[labels.ndim])
         return labels
+
+class NiftiFolderDataset(Dataset):
+    def __init__(self,
+        path,                   # Path to the root directory containing anatomy subdirectories.
+        resolution = 64,
+        **super_kwargs          # Additional arguments for the Dataset base class.
+    ):
+        self._path = path
+        self._resolution = resolution
+        self._all_fnames = [os.path.join(root, file)
+                            for root, dirs, files in os.walk(self._path)
+                            for file in files if file.endswith('.nii.gz')]
+
+        if len(self._all_fnames) == 0:
+            raise IOError('No .nii.gz files found in the specified paths')
+
+        # Load a sample image to determine dataset shape
+        print(f"Dataset Size: {len(self._all_fnames)}\n")
+        name = os.path.basename(self._path)
+        raw_shape = [len(self._all_fnames), self._resolution, self._resolution, self._resolution]
+        super().__init__(name=name, raw_shape=raw_shape, **super_kwargs)
+
+    def _load_raw_image(self, index):
+        # Load a NIfTI file using nibabel and convert to numpy array
+        return nib.load(self._all_fnames[index]).get_fdata()
+        
+    def __len__(self):
+        return len(self._all_fnames)
+    
+    def __getitem__(self, index):
+        # Load the image and return it as a torch tensor
+        return torch.tensor(self._load_raw_image(index))
+
+    def __getstate__(self):
+        return dict(super().__getstate__())
